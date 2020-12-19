@@ -2,8 +2,29 @@ boolean handling = false;
 int currentStep = 0;
 int maxStep = 10;
 
+boolean button1pushed = false;
+boolean button2pushed = false;
+int potentioPercent = 0;
 
-void handleSelectButton() {
+void handleInputs() {
+  potentioPercent = ((1024 - analogRead(A1)) / 1024.0) * 100;
+
+  if (button1pushed == false && digitalRead(PIN_BUTTON_SELECT) == 1) {
+    button1pushed = true;
+  }
+  if (button2pushed == false && digitalRead(PIN_BUTTON_CONTROL) == 1) {
+    button2pushed = true;
+  }
+  
+  Serial.print("1: ");
+  Serial.print(button1pushed);
+  Serial.print(" - 2: ");
+  Serial.print(button2pushed);
+  Serial.print(" - A1: ");
+  Serial.print(potentioPercent);
+  Serial.println("");
+  
+  /*
   if (digitalRead(PIN_BUTTON_CONTROL) == LOW && handling == false) {
     handling = true;
     currentStep++;
@@ -19,6 +40,7 @@ void handleSelectButton() {
   if (currentStep == 1) {
     setCommand();
   }
+  */
 }
 
 void setCommand() {

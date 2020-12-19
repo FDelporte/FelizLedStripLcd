@@ -1,20 +1,12 @@
 #include <SPI.h>
 #include <Adafruit_NeoPixel.h>
 
-// Test messages: 
-// 1:25:0:127:0
-// 2:5:255:0:0:0:0:250
-// 3:25:255:0:0:0:0:250
-// 4:50:255:0:0:0:0:250
-// 5:50
-// 6
-// 98
-// 99
+// Install Arduino librariy: Adafruit NeoPixel
 
 // Define the number of LEDS in your strip here
-#define PIN_LED 6
-#define PIN_BUTTON_SELECT 8
-#define PIN_BUTTON_CONTROL 9
+#define PIN_LED 9
+#define PIN_BUTTON_SELECT 14
+#define PIN_BUTTON_CONTROL 15
 #define NUMBER_OF_LEDS 150
 
 // Variables used by the code to handle the incoming LED commands
@@ -22,7 +14,7 @@ char input[50];
 int incomingByte = 0;
 
 // Variables defined by the incoming LED commands
-byte commandId = 0;
+byte commandId = 4;
 int animationSpeed = 10;
 uint32_t rgb1 = 0;
 uint32_t rgb2 = 0;
@@ -44,32 +36,25 @@ Adafruit_NeoPixel strip = Adafruit_NeoPixel(NUMBER_OF_LEDS, PIN_LED, NEO_GRB + N
 void setup() {
   // Configure serial speed and wait till it is available
   // This is used to output logging info and can receive LED commands
-  Serial.begin(9600);  
-  while (!Serial) {
-    ; // wait for serial port to connect. Needed for native USB port only
-  }
-
+  Serial.begin(9600); 
+  
   // Initialize button
   pinMode(PIN_BUTTON_CONTROL, INPUT);
   pinMode(PIN_BUTTON_SELECT, INPUT);
   
   // Initialize the LCD display
+  Serial.println("lcd start");
   initLcd();
-  printLcd(0, 0, "  Hallo Feliz!  ");
-  printLcd(0, 1, " Happy birthday ");
+  printLcd(0, 0, " Feliz  Navidad ");
+  printLcd(0, 1, "  Hallo Feliz!  ");
+  Serial.println("lcd end");
   
   // Initialize the LED strip
   initLeds();
-  
-  // Set the initial LED effect
-  String message = "4:500:250:0:0:0:200:250";
-  message.toCharArray(input, 50);
 }
 
 void loop() {  
-  checkSerial();
-  handleMessage();
-  handleSelectButton();
+  handleInputs();
   
   currentLoop++;
 
@@ -100,5 +85,6 @@ void loop() {
     }
 
     currentLoop = 0;
+    delay(100);
   }
 }

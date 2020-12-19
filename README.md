@@ -13,5 +13,6 @@ Reusing example code of ["Getting Started with Java on Raspberry Pi"](https://we
 ## Functions
 
 ## Libraries to install in Arduino IDE
-* AdaFruit NeoPixel by Adafruit
+* AdaFruit NeoPixel by Adafruit (via Arduino IDE)
+* LiquidCrystal_I2C from https://github.com/fdebrabander/Arduino-LiquidCrystal-I2C-library
 
