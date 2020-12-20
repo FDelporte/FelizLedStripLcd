@@ -9,16 +9,34 @@
 #define PIN_BUTTON_CONTROL 15
 #define NUMBER_OF_LEDS 150
 
+#define EFFECT_STATIC_COLOR 1
+#define EFFECT_STATIC_FADE 2
+#define EFFECT_BLINKING 3
+#define EFFECT_RUNNING 4
+#define EFFECT_RAINBOW_STATIC 5
+#define EFFECT_RAINBOW_FADE 6
+
+#define STEP_ACTIVE 1
+#define STEP_EFFECT 2
+#define STEP_R1 3
+#define STEP_G1 4
+#define STEP_B1 5
+#define STEP_R2 6
+#define STEP_G2 7
+#define STEP_B2 8
+#define STEP_SPEED 9
+
 // Variables used by the code to handle the incoming LED commands
 char input[50];
 int incomingByte = 0;
 
 // Variables defined by the incoming LED commands
-byte commandId = 4;
-int animationSpeed = 10;
-uint32_t rgb1 = 0;
-uint32_t rgb2 = 0;
+int selectedEffect = EFFECT_RAINBOW_STATIC;
+int animationSpeedPercent = 50;
+int colors[6]; // RGB 1 and 2
+String colorLabels[6]; // R1, G1,...
 
+int currentStep = STEP_ACTIVE;
 int currentLoop = 0;
 
 // LED strip initialization
@@ -45,46 +63,56 @@ void setup() {
   // Initialize the LCD display
   Serial.println("lcd start");
   initLcd();
-  printLcd(0, 0, " Feliz  Navidad ");
-  printLcd(0, 1, "  Hallo Feliz!  ");
+  printLcdLine(0, " Feliz  Navidad ");
+  printLcdLine(1, "  Hallo Feliz!  ");
   Serial.println("lcd end");
   
   // Initialize the LED strip
-  initLeds();
+  colors[0] = 255;  // R1
+  colors[1] = 0;    // G1
+  colors[2] = 0;    // B1
+  colors[3] = 0;    // R2
+  colors[4] = 0;    // G2
+  colors[5] = 255;  // B2
+  colorLabels[0] = "R1";
+  colorLabels[1] = "G1";
+  colorLabels[2] = "B1";
+  colorLabels[3] = "R2";
+  colorLabels[4] = "G2";
+  colorLabels[5] = "B2";
 }
 
 void loop() {  
   handleInputs();
   
+  // Only do LED effect when in active mode and loop exceeds the defined animationSpeed
   currentLoop++;
+  if (currentStep == STEP_ACTIVE) {
+    lcdShowActiveStep();
 
-  // Only do LED effect when loop exceeds the defined animationSpeed
-  if (currentLoop >= animationSpeed) {
-    // Depending on the commandId, call the correct LED effect
-    if (commandId == 1) {
-      setStaticColor();
-    } else if (commandId == 2) {
-      setStaticFade();
-    } else if (commandId == 3) {
-      setBlinking(); 
-    } else if (commandId == 4) {
-      setRunningLight(); 
-    } else if (commandId == 5) {
-      setFadingRainbow(); 
-    } else if (commandId == 6) {
-      setStaticRainbow(); 
-    } else if (commandId == 98) {
-      rgb1 = strip.Color(255, 255, 255);
-      setStaticColor();
-    } else if (commandId == 99) {
-      clearLeds();
-    } else {
-      Serial.print("Command ");
-      Serial.print(commandId);
-      Serial.println(" is not implemented");
+    // Animation speed range is depending on the selected effect
+    int animationSpeed = animationSpeedPercent;
+    // TODO
+  
+    if (currentLoop >= animationSpeed) {
+      // Depending on the commandId, call the correct LED effect
+      if (selectedEffect == EFFECT_STATIC_COLOR) {
+        setStaticColor();
+      } else if (selectedEffect == EFFECT_STATIC_FADE) {
+        setStaticFade();
+      } else if (selectedEffect == EFFECT_BLINKING) {
+        setBlinking(); 
+      } else if (selectedEffect == EFFECT_RUNNING) {
+        setRunningLight(); 
+      } else if (selectedEffect == EFFECT_RAINBOW_STATIC) {
+        setFadingRainbow(); 
+      } else if (selectedEffect == EFFECT_RAINBOW_FADE) {
+        setStaticRainbow(); 
+      }
     }
 
     currentLoop = 0;
-    delay(100);
   }
+  
+  delay(10);
 }

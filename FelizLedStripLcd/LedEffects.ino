@@ -12,11 +12,22 @@ void clearLeds() {
   strip.show();
 }
 
-void setStaticColor() {
-  for (uint16_t i = 0; i < strip.numPixels(); i++) {
-    strip.setPixelColor(i, rgb1);
-  }
+int getRGB1() {
+  return strip.Color(colors[0], colors[1], colors[2]);
+}
 
+int getRGB2() {
+  return strip.Color(colors[3], colors[4], colors[5]);
+}
+
+void setStaticColor() {
+  setStaticColorByValue(getRGB1());
+}
+
+void setStaticColorByValue(int rgb) {
+  for (uint16_t i = 0; i < strip.numPixels(); i++) {
+    strip.setPixelColor(i, rgb);
+  }
   strip.show();
 }
 
@@ -24,19 +35,15 @@ void setStaticFade() {
   for (uint16_t i = 0; i < strip.numPixels(); i++) {
     strip.setPixelColor(i, getGradientColor(i));
   }
-
   strip.show();
 }
 
 void setBlinking() {  
   for(uint16_t i = 0; i < strip.numPixels(); i++) {
-    strip.setPixelColor(i, currentAction == 1 ? rgb1 : rgb2);
+    strip.setPixelColor(i, currentAction == 1 ? getRGB1() : getRGB2());
   }
-
   strip.show();
-
   currentAction++;
-
   if (currentAction > 2) {
     currentAction = 1;
   }
@@ -48,11 +55,11 @@ void setRunningLight() {
   }
   
   // Show color 1
-  strip.setPixelColor(currentAction, rgb1);
+  strip.setPixelColor(currentAction, getRGB1());
   strip.show(); 
 
   // Reset to color 2 for next loop
-  strip.setPixelColor(currentAction, rgb2);
+  strip.setPixelColor(currentAction, getRGB2());
   
   currentAction++;
 }
@@ -61,13 +68,10 @@ void setFadingRainbow() {
   if (currentAction > 255) {
     currentAction = 0;
   }
-
   for (uint16_t i = 0; i < strip.numPixels(); i++) {
     strip.setPixelColor(i, getWheelColor((i * 1 + currentAction) & 255));
   }
-  
   strip.show();
-  
   currentAction++;
 }
 
@@ -75,7 +79,6 @@ void setStaticRainbow() {
   for (uint16_t i = 0; i < strip.numPixels(); i++) {
     strip.setPixelColor(i, getWheelColor((255 / strip.numPixels()) * i));
   }
-  
   strip.show();
 }
 
@@ -83,28 +86,19 @@ void setStaticRainbow() {
 uint32_t getGradientColor(uint16_t pos) {
   float factor = ((float) pos / (float) (strip.numPixels() - 1));
   
-  byte r1 = (rgb1 & 0xFF0000) >> 16;
-  byte g1 = (rgb1 & 0x00FF00) >> 8;
-  byte b1 = (rgb1 & 0x0000FF);
+  byte r1 = (colors[0] & 0xFF0000) >> 16;
+  byte g1 = (colors[1] & 0x00FF00) >> 8;
+  byte b1 = (colors[2] & 0x0000FF);
 
-  byte r2 = (rgb2 & 0xFF0000) >> 16;
-  byte g2 = (rgb2 & 0x00FF00) >> 8;
-  byte b2 = (rgb2 & 0x0000FF);
+  byte r2 = (colors[3] & 0xFF0000) >> 16;
+  byte g2 = (colors[4] & 0x00FF00) >> 8;
+  byte b2 = (colors[5] & 0x0000FF);
 
   byte r = (factor * r2) + ((1 - factor) * r1);
   byte g = (factor * g2) + ((1 - factor) * g1);
   byte b = (factor * b2) + ((1 - factor) * b1);
 
   uint32_t rt = strip.Color(r, g, b);
-
-  /*
-  Serial.print("Position ");
-  Serial.print(pos);
-  Serial.print(", factor ");
-  Serial.print(factor);
-  Serial.print(", gradient color: ");
-  Serial.println(String(rt, HEX));
-  */
   
   return rt;
 }
