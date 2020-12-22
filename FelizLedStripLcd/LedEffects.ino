@@ -1,3 +1,4 @@
+// Using some effects from the AdaFruit NeoPixel strandtest_wheel example
 int currentAction = 0;
 
 void initLeds() {
@@ -8,15 +9,16 @@ void initLeds() {
 }
 
 void clearLeds() {
+  Serial.println("Clearing strip");
   strip.clear(); 
   strip.show();
 }
 
-int getRGB1() {
+uint32_t getRGB1() {
   return strip.Color(colors[0], colors[1], colors[2]);
 }
 
-int getRGB2() {
+uint32_t getRGB2() {
   return strip.Color(colors[3], colors[4], colors[5]);
 }
 
@@ -24,7 +26,9 @@ void setStaticColor() {
   setStaticColorByValue(getRGB1());
 }
 
-void setStaticColorByValue(int rgb) {
+void setStaticColorByValue(uint32_t rgb) {
+  Serial.print("Static color: ");
+  Serial.println(rgb);
   for (uint16_t i = 0; i < strip.numPixels(); i++) {
     strip.setPixelColor(i, rgb);
   }
@@ -80,27 +84,54 @@ void setStaticRainbow() {
     strip.setPixelColor(i, getWheelColor((255 / strip.numPixels()) * i));
   }
   strip.show();
+  Serial.println("Static rainbow set");
+}
+
+
+// Theater effect
+int theaterColorCounter = 0;
+int theaterLedCounter = 0;
+void theaterChaseRainbow(uint8_t wait) {
+  // cycle all 256 colors in the wheel
+  if (theaterColorCounter > 255) {
+    theaterColorCounter = 0;
+  }
+  if (theaterLedCounter >= 3) {
+    theaterLedCounter = 0;
+  }
+  strip.clear(); 
+  for (uint16_t i=theaterLedCounter; i < strip.numPixels(); i=i+3) {
+    // turn every third pixel on
+    strip.setPixelColor(i, Wheel((i+theaterColorCounter) % 255));   
+  }
+  strip.show();
+  theaterColorCounter++;
+  theaterLedCounter++;
+}
+
+// Input a value 0 to 255 to get a color value.
+// The colours are a transition r - g - b - back to r.
+uint32_t Wheel(byte WheelPos) {
+  WheelPos = 255 - WheelPos;
+  if(WheelPos < 85) {
+    return strip.Color(255 - WheelPos * 3, 0, WheelPos * 3);
+  }
+  if(WheelPos < 170) {
+    WheelPos -= 85;
+    return strip.Color(0, WheelPos * 3, 255 - WheelPos * 3);
+  }
+  WheelPos -= 170;
+  return strip.Color(WheelPos * 3, 255 - WheelPos * 3, 0);
 }
 
 // Calculate a gradient color between color 1 and 2, for the given position
 uint32_t getGradientColor(uint16_t pos) {
-  float factor = ((float) pos / (float) (strip.numPixels() - 1));
-  
-  byte r1 = (colors[0] & 0xFF0000) >> 16;
-  byte g1 = (colors[1] & 0x00FF00) >> 8;
-  byte b1 = (colors[2] & 0x0000FF);
-
-  byte r2 = (colors[3] & 0xFF0000) >> 16;
-  byte g2 = (colors[4] & 0x00FF00) >> 8;
-  byte b2 = (colors[5] & 0x0000FF);
-
-  byte r = (factor * r2) + ((1 - factor) * r1);
-  byte g = (factor * g2) + ((1 - factor) * g1);
-  byte b = (factor * b2) + ((1 - factor) * b1);
-
-  uint32_t rt = strip.Color(r, g, b);
-  
-  return rt;
+  float factor = (pos * 1.0) / strip.numPixels();
+  return strip.Color(
+    (factor * colors[3]) + ((1 - factor) * colors[0]),
+    (factor * colors[4]) + ((1 - factor) * colors[1]),
+    (factor * colors[5]) + ((1 - factor) * colors[2])
+   );
 }
 
 // Pos from 0 to 255 to get colors from full color wheel

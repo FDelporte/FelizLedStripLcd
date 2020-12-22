@@ -1,41 +1,55 @@
 int maxStep = 10;
 
 boolean editMode = false;
-boolean button1activated = false;
-boolean button2activated = false;
+boolean confirmActivated = false;
 int potentioPercent = 0;
 int potentioValue = 0;
 
 void handleInputs() {
-  potentioPercent = ((1024 - analogRead(A1)) / 1024.0) * 100;
-  potentioValue = ((1024 - analogRead(A1)) / 1024.0) * 255;
+  btSelect.loop(); // MUST call the loop() function first
+  boolean stateBtPressed = btSelect.isPressed();
+  btConfirm.loop();
+  boolean stateBtConfirmed = btConfirm.isPressed();
 
-  if (button1activated == false && digitalRead(PIN_BUTTON_SELECT) == 1) {
-    button1activated = true;
-  }
-  if (button2activated == false && digitalRead(PIN_BUTTON_CONTROL) == 1) {
-    button2activated = true;
-  }
-  
-  Serial.print("1: ");
-  Serial.print(button1activated);
-  Serial.print(" - 2: ");
-  Serial.print(button2activated);
-  Serial.print(" - A1: ");
-  Serial.print(potentioPercent);
-  Serial.print("/");
-  Serial.print(potentioValue);
-  Serial.println("");
+  // Read potentio meter value but avoid toggling
+  int newPercent = ((1024 - analogRead(A1)) / 1024.0) * 100;
+  int newValue = ((1024 - analogRead(A1)) / 1024.0) * 255;
 
-  if (button1activated) {
+  if (newPercent == 0 
+    || newPercent == 100 
+    || newPercent > potentioPercent + 3
+    || newPercent < potentioPercent - 3) {
+      Serial.print("Changing potentio percent from ");
+      Serial.print(potentioPercent);
+      Serial.print(" to ");
+      Serial.print(newPercent);
+      Serial.println("%");
+      potentioPercent = newPercent;
+  }
+
+  if (newValue == 0
+    || newValue == 255
+    || newValue > potentioValue + 5
+    || newValue < potentioValue - 5) {
+      Serial.print("Changing potentio percent from ");
+      Serial.print(potentioValue);
+      Serial.print(" to ");
+      Serial.println(newValue);
+      potentioValue = newValue;
+  }
+    
+  if (stateBtPressed) {
     currentStep++;
     if (currentStep > STEP_SPEED) {
-      currentStep == STEP_ACTIVE;
+      currentStep = STEP_ACTIVE;
+      lcdShowActiveStepReset();
     }
-    button1activated = false;
-    button2activated = false;
+    confirmActivated = false;
     editMode = false;
     Serial.println("Back to ACTIVE MODE");
+  }
+  if (confirmActivated == false && stateBtConfirmed) {
+    confirmActivated = true;
   }
 
   if (currentStep == STEP_EFFECT) {
@@ -59,9 +73,9 @@ void handleInputs() {
 
 void selectEffect() {
   if (!editMode) {
-    if (button2activated) {
+    if (confirmActivated) {
       editMode = true;
-      button2activated = false;
+      confirmActivated = false;
     } else {
       printLcdLine(0, " Effect kiezen? ");
       printLcdLine(1, "    Klik OK     ");
@@ -69,40 +83,46 @@ void selectEffect() {
   } else {
     printLcdLine(0, "  Kies effect   ");
     if (potentioPercent < 15) {
-      if (button2activated) {
+      if (confirmActivated) {
         setEffect(EFFECT_STATIC_COLOR);
       } else {
-        printLcdLine(1, "1. Vast kleur   ");  
+        printLcdLine(1, " Vast kleur 1   ");  
       }
     } else if (potentioPercent >= 15 && potentioPercent < 30) {
-      if (button2activated) {
+      if (confirmActivated) {
         setEffect(EFFECT_STATIC_FADE);
       } else {
-        printLcdLine(1, "2. Dégradé      ");  
+        printLcdLine(1, " Kleur 1 naar 2 ");  
       }
     } else if (potentioPercent >= 30 && potentioPercent < 45) {
-      if (button2activated) {
+      if (confirmActivated) {
         setEffect(EFFECT_BLINKING);
       } else {
-        printLcdLine(1, "3. Flashing     "); 
+        printLcdLine(1, " Flashing 1-2   "); 
       } 
     } else if (potentioPercent >= 45 && potentioPercent < 60) {
-      if (button2activated) {
+      if (confirmActivated) {
         setEffect(EFFECT_RUNNING);
       } else {
-        printLcdLine(1, "4. Lopend licht ");  
+        printLcdLine(1, " Looplicht 1-2  ");  
       }
-    } else if (potentioPercent >= 60 && potentioPercent < 75) {
-      if (button2activated) {
+    } else if (potentioPercent >= 60 && potentioPercent < 70) {
+      if (confirmActivated) {
         setEffect(EFFECT_RAINBOW_STATIC);
       } else {
-        printLcdLine(1, "5. Vastregenboog");  
+        printLcdLine(1, " Vaste regenboog");  
       }
-    } else if (potentioPercent >= 75 && potentioPercent < 30) {
-      if (button2activated) {
-        setEffect(EFFECT_RAINBOW_FADE);
+    } else if (potentioPercent >= 70 && potentioPercent < 90) {
+      if (confirmActivated) {
+        setEffect(EFFECT_RAINBOW_FADING);
       } else {
-        printLcdLine(1, "6. Loopregenboog");  
+        printLcdLine(1, " Loop regenboog ");  
+      }
+    } else if (potentioPercent >= 90) {
+      if (confirmActivated) {
+        setEffect(EFFECT_THEATER);
+      } else {
+        printLcdLine(1, " Theater chase  ");  
       }
     } 
   }
@@ -110,28 +130,34 @@ void selectEffect() {
 
 void setEffect(int effect) {
   selectedEffect = effect;
-  button2activated = false;
+  confirmActivated = false;
   editMode = false;
   currentStep = STEP_ACTIVE;
+  lcdShowActiveStepReset();
 }
 
 void selectColor(int index) {
   if (!editMode) {
-    if (button2activated) {
+    if (confirmActivated) {
       editMode = true;
-      button2activated = false;
+      confirmActivated = false;
     } else {
       printLcdLine(0, "Kleur " + colorLabels[index] + " kiezen?");
       printLcdLine(1, "    Klik OK     ");
+      if (index <= 2) {
+        setStaticColorByValue(strip.Color(colors[0], colors[1], colors[2]));
+      } else {
+        setStaticColorByValue(strip.Color(colors[3], colors[4], colors[5]));
+      }
     }
   } else {
     printLcdLine(0, "    Kies " + colorLabels[index] + "     ");
-    if (button2activated) {
+    if (confirmActivated) {
       colors[index] = potentioValue;
-      button2activated = false;
+      confirmActivated = false;
       editMode = false;
     } else {
-      printLcdLine(1, "0-255: " + String(potentioValue));
+      printLcdLine(1, "0-255: " + String(potentioValue) + "|" + colors[index]);
       if (index == 0) {
         setStaticColorByValue(strip.Color(potentioValue, colors[1], colors[2]));
       } else if (index == 1) {
@@ -151,21 +177,23 @@ void selectColor(int index) {
 
 void selectSpeed() {
   if (!editMode) {
-    if (button2activated) {
+    if (confirmActivated) {
       editMode = true;
-      button2activated = false;
+      confirmActivated = false;
     } else {
       printLcdLine(0, "Snelheid kiezen?");
       printLcdLine(1, "    Klik OK     ");
     }
   } else {
     printLcdLine(0, "Kies snelheid");
-    if (button2activated) {
+    if (confirmActivated) {
       animationSpeedPercent = potentioPercent;
-      button2activated = false;
+      confirmActivated = false;
       editMode = false;
+      currentStep = STEP_ACTIVE;
+      lcdShowActiveStepReset();
     } else {
-      printLcdLine(1, "0-100: " + String(potentioPercent) + "%");
+      printLcdLine(1, "0-100: " + String(potentioPercent) + "|" + animationSpeedPercent + "%");
     }
   }
 }
